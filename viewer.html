@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Book Viewer</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
 
@@ -11,15 +13,13 @@
 body {
     margin: 0;
     background: #d0d0d0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    overflow: hidden;
 }
 
 /* Toolbar */
 #toolbar {
-    width: 100%;
     background: #222;
     padding: 10px;
     text-align: right;
@@ -33,21 +33,15 @@ body {
     border-radius: 4px;
 }
 
-/* Book container */
-#book-container {
-    width: 80vw;       /* 80% of screen width */
-    height: 85vh;      /* fit inside screen height */
+/* Book wrapper */
+#book-wrapper {
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.page {
-    background: white;
-    position: relative;
-}
-
-/* Thin black separator */
+/* Thin center separator */
 .page::after {
     content: "";
     position: absolute;
@@ -57,11 +51,10 @@ body {
     height: 100%;
     background: black;
 }
-
 canvas {
-    display: block;
     width: 100%;
     height: 100%;
+    display: block;
 }
 </style>
 </head>
@@ -72,7 +65,7 @@ canvas {
     <a id="downloadBtn" href="#" download>Download PDF</a>
 </div>
 
-<div id="book-container">
+<div id="book-wrapper">
     <div id="book"></div>
 </div>
 
@@ -81,6 +74,8 @@ canvas {
 const params = new URLSearchParams(window.location.search);
 const pdfUrl = params.get("pdf");
 document.getElementById("downloadBtn").href = pdfUrl;
+
+let pageFlip;
 
 async function loadPDF() {
 
@@ -91,12 +86,11 @@ async function loadPDF() {
     let baseWidth = 0;
     let baseHeight = 0;
 
-    // Render at high resolution for sharpness
+    // Render high quality pages
     for (let i = 1; i <= pdf.numPages; i++) {
 
         const page = await pdf.getPage(i);
-
-        const viewport = page.getViewport({ scale: 2 }); // high quality
+        const viewport = page.getViewport({ scale: 2 }); // high resolution
 
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
@@ -111,6 +105,7 @@ async function loadPDF() {
 
         const div = document.createElement("div");
         div.className = "page";
+        div.style.position = "relative";
         div.appendChild(canvas);
 
         pages.push(div);
@@ -119,25 +114,52 @@ async function loadPDF() {
         baseHeight = viewport.height;
     }
 
-    // Determine if mobile
-    const isMobile = window.innerWidth < 768;
+    initializeBook(pages, baseWidth, baseHeight);
+}
 
-    const pageFlip = new St.PageFlip(container, {
-        width: baseWidth,
-        height: baseHeight,
-        size: "stretch",       // makes it responsive
+function initializeBook(pages, pageWidth, pageHeight) {
+
+    const container = document.getElementById("book");
+
+    // Destroy previous instance if resizing
+    if (pageFlip) {
+        pageFlip.destroy();
+    }
+
+    const isMobile = window.innerWidth <= 768;
+
+    let bookWidth, bookHeight;
+
+    if (isMobile) {
+        // 📱 MOBILE
+        bookWidth = window.innerWidth;
+        bookHeight = window.innerHeight - 60; // minus toolbar
+    } else {
+        // 🖥 DESKTOP
+        bookWidth = window.innerWidth * 0.8; // 80% of browser width
+        bookHeight = window.innerHeight - 60;
+    }
+
+    pageFlip = new St.PageFlip(container, {
+        width: pageWidth,
+        height: pageHeight,
+        size: "stretch",
         minWidth: 300,
-        maxWidth: 2000,
+        maxWidth: bookWidth,
         minHeight: 400,
-        maxHeight: 3000,
+        maxHeight: bookHeight,
         showCover: false,
+        usePortrait: isMobile,  // FORCE single page on mobile
         mobileScrollSupport: false,
-        usePortrait: isMobile,  // single page on mobile
         maxShadowOpacity: 0.5
     });
 
     pageFlip.loadFromHTML(pages);
 }
+
+window.addEventListener("resize", () => {
+    loadPDF();  // Recalculate layout on resize
+});
 
 loadPDF();
 
