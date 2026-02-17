@@ -10,17 +10,17 @@
 <style>
 body {
     margin: 0;
-    background: #cfcfcf;
+    background: #d0d0d0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden;
 }
 
-/* Top toolbar */
+/* Toolbar */
 #toolbar {
     width: 100%;
     background: #222;
-    color: white;
     padding: 10px;
     text-align: right;
 }
@@ -29,22 +29,25 @@ body {
     color: white;
     text-decoration: none;
     background: #444;
-    padding: 8px 15px;
+    padding: 8px 14px;
     border-radius: 4px;
 }
 
 /* Book container */
-#book {
-    margin-top: 20px;
+#book-container {
+    width: 80vw;       /* 80% of screen width */
+    height: 85vh;      /* fit inside screen height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* Each page */
 .page {
     background: white;
     position: relative;
 }
 
-/* Black separator line in the middle */
+/* Thin black separator */
 .page::after {
     content: "";
     position: absolute;
@@ -54,8 +57,11 @@ body {
     height: 100%;
     background: black;
 }
+
 canvas {
     display: block;
+    width: 100%;
+    height: 100%;
 }
 </style>
 </head>
@@ -66,14 +72,14 @@ canvas {
     <a id="downloadBtn" href="#" download>Download PDF</a>
 </div>
 
-<div id="book"></div>
+<div id="book-container">
+    <div id="book"></div>
+</div>
 
 <script>
 
 const params = new URLSearchParams(window.location.search);
 const pdfUrl = params.get("pdf");
-
-// Set download link
 document.getElementById("downloadBtn").href = pdfUrl;
 
 async function loadPDF() {
@@ -82,15 +88,15 @@ async function loadPDF() {
     const container = document.getElementById("book");
 
     let pages = [];
-    let pageWidth = 0;
-    let pageHeight = 0;
+    let baseWidth = 0;
+    let baseHeight = 0;
 
+    // Render at high resolution for sharpness
     for (let i = 1; i <= pdf.numPages; i++) {
 
         const page = await pdf.getPage(i);
 
-        // HIGH QUALITY SCALE
-        const viewport = page.getViewport({ scale: 2 }); 
+        const viewport = page.getViewport({ scale: 2 }); // high quality
 
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
@@ -109,18 +115,25 @@ async function loadPDF() {
 
         pages.push(div);
 
-        pageWidth = viewport.width;
-        pageHeight = viewport.height;
+        baseWidth = viewport.width;
+        baseHeight = viewport.height;
     }
 
+    // Determine if mobile
+    const isMobile = window.innerWidth < 768;
+
     const pageFlip = new St.PageFlip(container, {
-        width: pageWidth,
-        height: pageHeight,
-        size: "fixed",
+        width: baseWidth,
+        height: baseHeight,
+        size: "stretch",       // makes it responsive
+        minWidth: 300,
+        maxWidth: 2000,
+        minHeight: 400,
+        maxHeight: 3000,
         showCover: false,
-        usePortrait: false,
-        maxShadowOpacity: 0.5,
-        mobileScrollSupport: false
+        mobileScrollSupport: false,
+        usePortrait: isMobile,  // single page on mobile
+        maxShadowOpacity: 0.5
     });
 
     pageFlip.loadFromHTML(pages);
