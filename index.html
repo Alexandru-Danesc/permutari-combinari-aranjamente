@@ -2,103 +2,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>PDF Book Viewer</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js"></script>
-
+<title>My PDF Library</title>
 <style>
 body {
-    margin: 0;
-    background: #bfbfbf;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    font-family: Arial;
+    text-align: center;
+    background: #f4f4f4;
 }
-
-#book {
-    width: 1200px;   /* MUST be 2x page width */
-    height: 800px;
-    margin-top: 40px;
-}
-
-.page {
-    width: 600px;
-    height: 800px;
-    background: white;
-}
-
-canvas {
-    width: 100%;
-    height: 100%;
+a {
+    display: block;
+    margin: 20px;
+    font-size: 20px;
+    text-decoration: none;
 }
 </style>
 </head>
-
 <body>
 
-<button onclick="loadPDF('pdfs/book1.pdf')">Open Book</button>
+<h1>My PDF Library</h1>
 
-<div id="book"></div>
-
-<script>
-
-async function loadPDF(url) {
-
-    const book = document.getElementById("book");
-
-    // Destroy old instance if exists
-    if ($("#book").data("turn")) {
-        $("#book").turn("destroy");
-    }
-
-    book.innerHTML = "";
-
-    const pdf = await pdfjsLib.getDocument(url).promise;
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-
-        const page = await pdf.getPage(i);
-
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = 600 / viewport.width;
-        const scaledViewport = page.getViewport({ scale: scale });
-
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-
-        canvas.width = 600;
-        canvas.height = 800;
-
-        await page.render({
-            canvasContext: context,
-            viewport: scaledViewport
-        }).promise;
-
-        const div = document.createElement("div");
-        div.className = "page";
-        div.appendChild(canvas);
-
-        book.appendChild(div);
-    }
-
-    // FORCE DOUBLE MODE
-    $("#book").turn({
-        width: 1200,
-        height: 800,
-        display: "double",
-        autoCenter: true,
-        when: {
-            turning: function(e, page) {
-                console.log("Turning to page", page);
-            }
-        }
-    });
-
-}
-
-</script>
-
+<a href="viewer.html?pdf=pdfs/book1.pdf">Open Book 1</a>
+<a href="viewer.html?pdf=pdfs/book2.pdf">Open Book 2</a>
 </body>
 </html>
