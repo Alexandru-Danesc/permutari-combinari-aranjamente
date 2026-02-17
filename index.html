@@ -4,31 +4,28 @@
 <meta charset="UTF-8">
 <title>PDF Book Viewer</title>
 
-<!-- jQuery (REQUIRED) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-
-<!-- Turn.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js"></script>
 
 <style>
 body {
-    background: #dcdcdc;
-    font-family: Arial;
-    text-align: center;
+    margin: 0;
+    background: #bfbfbf;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 #book {
-    width: 1000px;
-    height: 600px;
-    margin: 40px auto;
+    width: 1200px;   /* MUST be 2x page width */
+    height: 800px;
+    margin-top: 40px;
 }
 
 .page {
-    width: 500px;
-    height: 600px;
+    width: 600px;
+    height: 800px;
     background: white;
 }
 
@@ -41,10 +38,8 @@ canvas {
 
 <body>
 
-<h2>PDF Library</h2>
+<button onclick="loadPDF('pdfs/book1.pdf')">Open Book</button>
 
-<button onclick="loadPDF('pdfs/book1.pdf')">Open Book 1</button>
-<button onclick="loadPDF('pdfs/book2.pdf')">Open Book 2</button>
 <div id="book"></div>
 
 <script>
@@ -52,24 +47,29 @@ canvas {
 async function loadPDF(url) {
 
     const book = document.getElementById("book");
+
+    // Destroy old instance if exists
+    if ($("#book").data("turn")) {
+        $("#book").turn("destroy");
+    }
+
     book.innerHTML = "";
 
     const pdf = await pdfjsLib.getDocument(url).promise;
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    for (let i = 1; i <= pdf.numPages; i++) {
 
-        const page = await pdf.getPage(pageNum);
+        const page = await pdf.getPage(i);
+
         const viewport = page.getViewport({ scale: 1 });
+        const scale = 600 / viewport.width;
+        const scaledViewport = page.getViewport({ scale: scale });
 
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
 
-        canvas.width = 500;
-        canvas.height = 600;
-
-        const scaledViewport = page.getViewport({
-            scale: 500 / viewport.width
-        });
+        canvas.width = 600;
+        canvas.height = 800;
 
         await page.render({
             canvasContext: context,
@@ -83,20 +83,19 @@ async function loadPDF(url) {
         book.appendChild(div);
     }
 
-    // IMPORTANT: destroy previous instance if exists
-    if ($("#book").data("turn")) {
-        $("#book").turn("destroy");
-    }
-
-    // Initialize as DOUBLE PAGE
+    // FORCE DOUBLE MODE
     $("#book").turn({
-        width: 1000,
-        height: 600,
+        width: 1200,
+        height: 800,
+        display: "double",
         autoCenter: true,
-        display: "double",   // forces two-page spread
-        gradients: true,
-        elevation: 50
+        when: {
+            turning: function(e, page) {
+                console.log("Turning to page", page);
+            }
+        }
     });
+
 }
 
 </script>
