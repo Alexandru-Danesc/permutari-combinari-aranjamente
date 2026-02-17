@@ -1,4 +1,4 @@
-
-1. Permutările unei mulțimi finite
-2. Combinări și aranjamente
-3. Binomul lui Newton
+1. Mulțimi finite ordonate
+2. Permutările unei mulțimi finite
+3. Combinări și aranjamente
+4. Binomul lui Newton
