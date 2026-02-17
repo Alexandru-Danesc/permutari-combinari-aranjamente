@@ -10,60 +10,97 @@
 <style>
 body {
     margin: 0;
-    background: #dcdcdc;
+    background: #cfcfcf;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 100vh;
 }
 
-#book {
-    width: 1000px;
-    height: 700px;
+/* Top toolbar */
+#toolbar {
+    width: 100%;
+    background: #222;
+    color: white;
+    padding: 10px;
+    text-align: right;
 }
+
+#toolbar a {
+    color: white;
+    text-decoration: none;
+    background: #444;
+    padding: 8px 15px;
+    border-radius: 4px;
+}
+
+/* Book container */
+#book {
+    margin-top: 20px;
+}
+
+/* Each page */
 .page {
     background: white;
+    position: relative;
+}
+
+/* Black separator line in the middle */
+.page::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: black;
 }
 canvas {
-    width: 100%;
-    height: 100%;
+    display: block;
 }
 </style>
 </head>
 
 <body>
 
+<div id="toolbar">
+    <a id="downloadBtn" href="#" download>Download PDF</a>
+</div>
+
 <div id="book"></div>
 
 <script>
 
-// Get PDF from URL
 const params = new URLSearchParams(window.location.search);
 const pdfUrl = params.get("pdf");
+
+// Set download link
+document.getElementById("downloadBtn").href = pdfUrl;
 
 async function loadPDF() {
 
     const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-    const bookContainer = document.getElementById("book");
+    const container = document.getElementById("book");
 
     let pages = [];
+    let pageWidth = 0;
+    let pageHeight = 0;
 
     for (let i = 1; i <= pdf.numPages; i++) {
 
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = 500 / viewport.width;
-        const scaledViewport = page.getViewport({ scale: scale });
+
+        // HIGH QUALITY SCALE
+        const viewport = page.getViewport({ scale: 2 }); 
 
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
 
-        canvas.width = 500;
-        canvas.height = 700;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
 
         await page.render({
             canvasContext: context,
-            viewport: scaledViewport
+            viewport: viewport
         }).promise;
 
         const div = document.createElement("div");
@@ -71,11 +108,14 @@ async function loadPDF() {
         div.appendChild(canvas);
 
         pages.push(div);
+
+        pageWidth = viewport.width;
+        pageHeight = viewport.height;
     }
 
-    const pageFlip = new St.PageFlip(bookContainer, {
-        width: 500,
-        height: 700,
+    const pageFlip = new St.PageFlip(container, {
+        width: pageWidth,
+        height: pageHeight,
         size: "fixed",
         showCover: false,
         usePortrait: false,
